@@ -11,6 +11,7 @@ from typing import Literal, Optional
 
 from dotenv import load_dotenv
 import os
+import ssl
 
 load_dotenv()  
 
@@ -204,7 +205,6 @@ async def my_application_update_element(
 #檢視我的素材
 @mcp.tool()
 async def my_application_list_my_media_assets(
-    store_uuid: str,
     media_type: Literal['image', 'video']
     ) -> str:
     """
@@ -212,7 +212,7 @@ async def my_application_list_my_media_assets(
     """
 
     protocol = "http" if dev else "https"
-
+    store_uuid = os.environ.get('STORE_UUID')
     async with aiohttp.ClientSession() as session:
         async with session.get(
             f"{protocol}://{domain}/api/v1/store/{store_uuid}/store_file/list/?is_public=true&media_type={media_type}",
@@ -306,11 +306,17 @@ async def my_application_get_element_component_source(component: Optional[Litera
     """
 
 
+    # 创建一个不验证 SSL 证书的上下文
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE
+
     protocol = 'https'
     domain = os.environ.get('DOMAIN') 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            f"{protocol}://{domain}/website_backend/source-viewer/{component}.html"
+            f"{protocol}://{domain}/website_backend/source-viewer/{component}.html",
+            ssl=ssl_context
         ) as resp:
             text = await resp.text()
             return text
