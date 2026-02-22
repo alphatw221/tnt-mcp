@@ -26,6 +26,12 @@ user_access_token = os.environ.get('USER_ACCESS_TOKEN')
 types = ['custom_slider', 'ck_editor', 'customer_login_form', 'customer_register_form', 'product_detail', 'cart_detail', 'checkout_form', 'order_detail', 'order_payment', 'my_orders', 
                       'my_account_button','cart_button', 'shop', 'website_search_bar', 'contact_us_form', 'blog_post_detail']
 
+# 创建一个不验证 SSL 证书的上下文
+ssl_context = ssl.create_default_context()
+ssl_context.check_hostname = False
+ssl_context.verify_mode = ssl.CERT_NONE
+
+
 @mcp.tool()
 async def my_application_create_webpage( webpage_name: str, ) -> str:
     """
@@ -37,6 +43,7 @@ async def my_application_create_webpage( webpage_name: str, ) -> str:
     async with aiohttp.ClientSession() as session:
         async with session.post(
             f"{protocol}://{domain}/api/v1/website/webpage/create/",
+            ssl=ssl_context,
             json={
                 'name':webpage_name
             },
@@ -74,6 +81,7 @@ async def my_application_create_element(
     async with aiohttp.ClientSession() as session:
         async with session.post(
             f"{protocol}://{domain}/api/v1/website/element/r_create/?target_webpage_uuid={target_webpage_uuid}&target_webpage_position={target_webpage_position}&target_element_relation_uuid={target_parent_relation_uuid}&target_relative_position={target_relative_position}",
+            ssl=ssl_context,
             json={
                 'name':element_name,
                 'tag_name':element_tag_name,
@@ -100,6 +108,7 @@ async def my_application_delete_webpage( webpage_uuid: str, ) -> str:
     async with aiohttp.ClientSession() as session:
         async with session.delete(
             f"{protocol}://{domain}/api/v1/website/webpage/{webpage_uuid}/delete/",
+            ssl=ssl_context,
             headers={
                 "Authorization": f"Bearer {user_access_token}",
                 "Content-Type": "application/json"
@@ -120,6 +129,7 @@ async def my_application_delete_element( parent_relation_uuid: str, ) -> str:
     async with aiohttp.ClientSession() as session:
         async with session.delete(
             f"{protocol}://{domain}/api/v1/website/element/{parent_relation_uuid}/delete/",
+            ssl=ssl_context,
             headers={
                 "Authorization": f"Bearer {user_access_token}",
                 "Content-Type": "application/json"
@@ -154,6 +164,7 @@ async def my_application_update_webpage(
     async with aiohttp.ClientSession() as session:
         async with session.put(
             f"{protocol}://{domain}/api/v1/website/webpage/{webpage_uuid}/update/",
+            ssl=ssl_context,
             json=json,
             headers={
                 "Authorization": f"Bearer {user_access_token}",
@@ -193,6 +204,7 @@ async def my_application_update_element(
     async with aiohttp.ClientSession() as session:
         async with session.put(
             f"{protocol}://{domain}/api/v1/website/element/{element_uuid}/update/",
+            ssl=ssl_context,
             json=json,
             headers={
                 "Authorization": f"Bearer {user_access_token}",
@@ -216,6 +228,7 @@ async def my_application_list_my_media_assets(
     async with aiohttp.ClientSession() as session:
         async with session.get(
             f"{protocol}://{domain}/api/v1/store/{store_uuid}/store_file/list/?is_public=true&media_type={media_type}",
+            ssl=ssl_context,
             headers={
                 "Authorization": f"Bearer {user_access_token}",
                 "Content-Type": "application/json"
@@ -249,6 +262,7 @@ async def my_application_action_to_target_element(
     async with aiohttp.ClientSession() as session:
         async with session.put(
             f"{protocol}://{domain}/api/v1/website/element/{parent_relation_uuid}/r_action/{action}/",
+            ssl=ssl_context,
             json={
                 'target_webpage_uuid':target_webpage_uuid,
                 'target_webpage_position':target_webpage_position,
@@ -276,7 +290,8 @@ async def my_application_get_detail_element_structure(element_uuid: str, ) -> st
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            f"{protocol}://{domain}/api/v1/website/element/{element_uuid}/agent/retrieve/?detail=true"
+            f"{protocol}://{domain}/api/v1/website/element/{element_uuid}/agent/retrieve/?detail=true",
+            ssl=ssl_context
         ) as resp:
             text = await resp.text()
             return text
@@ -293,23 +308,20 @@ async def my_application_get_brief_webpage_structure(webpage_name: str, object_u
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            f"{protocol}://{domain}/api/v1/website/webpage/{webpage_name or ''}/{object_uuid or ''}/agent/retrieve/?detail=false"
+            f"{protocol}://{domain}/api/v1/website/webpage/{webpage_name or ''}/{object_uuid or ''}/agent/retrieve/?detail=false",
+            ssl=ssl_context
         ) as resp:
             text = await resp.text()
             return text
 
 @mcp.tool()
 async def my_application_get_element_component_source(component: Optional[Literal['custom_slider', 'ck_editor', 'customer_login_form', 'customer_register_form', 'product_detail', 'cart_detail', 'checkout_form', 'order_detail', 'order_payment', 'my_orders', 
-                      'my_account_button','cart_button', 'shop', 'website_search_bar', 'contact_us_form', 'blog_post_detail', 'ComposeProductModal']]) -> str:
+                      'my_account_button','cart_button', 'shop', 'website_search_bar', 'contact_us_form', 'blog_post_detail', 'ComposeProductModal', 'OrderItemsSummary', 'GuestCheckoutNotification']]) -> str:
     """
     取得我的應用中特定element type組件的原始碼以及預設樣式表
     """
 
 
-    # 创建一个不验证 SSL 证书的上下文
-    ssl_context = ssl.create_default_context()
-    ssl_context.check_hostname = False
-    ssl_context.verify_mode = ssl.CERT_NONE
 
     protocol = 'https'
     domain = os.environ.get('DOMAIN') 
