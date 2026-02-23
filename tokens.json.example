@@ -1,0 +1,16 @@
+{
+  "your-api-key-for-user1": {
+    "client_id": "user1",
+    "scopes": ["read", "write"],
+    "user_access_token": "django-backend-token-for-user1",
+    "domain": "store1.tw",
+    "store_uuid": "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+  },
+  "your-api-key-for-user2": {
+    "client_id": "user2",
+    "scopes": ["read", "write"],
+    "user_access_token": "django-backend-token-for-user2",
+    "domain": "store2.tw",
+    "store_uuid": "yyyyyyyy-yyyy-yyyy-yyyy-yyyyyyyyyyyy"
+  }
+}

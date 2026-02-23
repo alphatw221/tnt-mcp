@@ -10,3 +10,6 @@ wheels/
 .venv
 .env.*
 .env
+
+# Token config（含敏感 credentials，不進 git）
+tokens.json

@@ -1,0 +1,10 @@
+.venv
+.env
+.env.*
+__pycache__
+*.py[oc]
+.git
+.gitignore
+README.md
+main.py
+tokens.json.example
