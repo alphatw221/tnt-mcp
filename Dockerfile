@@ -13,6 +13,7 @@ RUN uv sync --frozen --no-dev
 
 # 複製原始碼
 COPY server.py .
+COPY tokens.json .
 
 EXPOSE 8080
 

@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "TNT-MCP": {
+      "command": "uv",
+      "args": [
+        "run",
+        "--project",
+        "/Users/linyilin/Desktop/tnt-mcp",
+        "python",
+        "/Users/linyilin/Desktop/tnt-mcp/server.py"
+      ],
+      "env": {
+        "DEV": "true"
+      }
+    }
+  },
+  "preferences": {
+    "coworkScheduledTasksEnabled": false,
+    "sidebarMode": "chat"
+  }
+}

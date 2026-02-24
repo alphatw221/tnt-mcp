@@ -22,7 +22,9 @@ dev = os.environ.get('DEV') == 'true'
 
 
 def _load_tokens() -> dict:
-    """從 tokens.json 載入多用戶 API key 設定"""
+    """從 tokens.json 載入多用戶 API key 設定（dev 模式不需要）"""
+    if dev:
+        return {}
     tokens_file = os.environ.get("TOKENS_FILE", "tokens.json")
     with open(tokens_file) as f:
         return json.load(f)
@@ -43,8 +45,9 @@ def get_user_config() -> dict:
     if dev:
         return {
             'user_access_token': os.environ.get('USER_ACCESS_TOKEN'),
-            'domain': '127.0.0.1:8000',
-            'store_uuid': os.environ.get('STORE_UUID'),
+            'domain': 'king-pork.tw',
+            # 'store_uuid': os.environ.get('STORE_UUID'),
+            'store_uuid': "3495d50f-f3f9-4ccc-81c6-86cdb8001bec",
         }
     token = get_access_token()
     return {
@@ -360,4 +363,4 @@ if __name__ == "__main__":
     if dev:
         mcp.run(transport="stdio")
     else:
-        mcp.run(transport="sse", host="0.0.0.0", port=8080)
+        mcp.run(transport="streamable-http", host="0.0.0.0", port=8080)
