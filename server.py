@@ -43,18 +43,42 @@ def get_user_config() -> dict:
     - 雲端模式（HTTP）：從 Bearer token 的 claims 讀取
     """
     if dev:
+        domain = os.environ.get('DOMAIN')
         return {
             'user_access_token': os.environ.get('USER_ACCESS_TOKEN'),
-            'domain': 'king-pork.tw',
-            # 'store_uuid': os.environ.get('STORE_UUID'),
-            'store_uuid': "3495d50f-f3f9-4ccc-81c6-86cdb8001bec",
+            'domain': domain,
+            'store_uuid': os.environ.get('STORE_UUID'),
+            'internal_base_url': None,  # dev 模式直接用 domain
         }
     token = get_access_token()
+    protocol = token.claims.get('protocol', 'https')
+    host = token.claims.get('host')
+    port = token.claims.get('port', '')
+    base = f"{protocol}://{host}:{port}" if port else f"{protocol}://{host}"
     return {
         'user_access_token': token.claims.get('user_access_token'),
         'domain': token.claims.get('domain'),
         'store_uuid': token.claims.get('store_uuid'),
+        'internal_base_url': base,
     }
+
+
+def _build_url(config: dict, path: str) -> str:
+    """用內部 service URL 避免 hairpin NAT，dev 模式直接用 domain"""
+    if config['internal_base_url']:
+        return f"{config['internal_base_url']}{path}"
+    return f"http://{config['domain']}{path}"
+
+
+def _base_headers(config: dict) -> dict:
+    """基本 headers，cluster 內部請求加 Host header 讓後端能比對 domain"""
+    headers = {
+        "Authorization": f"Bearer {config['user_access_token']}",
+        "Content-Type": "application/json",
+    }
+    if config['internal_base_url']:
+        headers["Host"] = config['domain']
+    return headers
 
 
 # 创建一个不验证 SSL 证书的上下文
@@ -69,19 +93,13 @@ async def my_application_create_webpage( webpage_name: str, ) -> str:
     在我的應用中創建網頁
     """
     config = get_user_config()
-    protocol = "http" if dev else "https"
 
     async with aiohttp.ClientSession() as session:
         async with session.post(
-            f"{protocol}://{config['domain']}/api/v1/website/webpage/create/",
+            _build_url(config, "/api/v1/website/webpage/create/"),
             ssl=ssl_context,
-            json={
-                'name':webpage_name
-            },
-            headers={
-                "Authorization": f"Bearer {config['user_access_token']}",
-                "Content-Type": "application/json"
-            }
+            json={'name': webpage_name},
+            headers=_base_headers(config),
         ) as resp:
             text = await resp.text()
             return text
@@ -107,23 +125,19 @@ async def my_application_create_element(
     如果需要將元素創建相對於目標參考元素 使用 target_parent_relation_uuid 以及 target_relative_position 參數
     """
     config = get_user_config()
-    protocol = "http" if dev else "https"
 
     async with aiohttp.ClientSession() as session:
         async with session.post(
-            f"{protocol}://{config['domain']}/api/v1/website/element/r_create/?target_webpage_uuid={target_webpage_uuid}&target_webpage_position={target_webpage_position}&target_element_relation_uuid={target_parent_relation_uuid}&target_relative_position={target_relative_position}",
+            _build_url(config, f"/api/v1/website/element/r_create/?target_webpage_uuid={target_webpage_uuid}&target_webpage_position={target_webpage_position}&target_element_relation_uuid={target_parent_relation_uuid}&target_relative_position={target_relative_position}"),
             ssl=ssl_context,
             json={
-                'name':element_name,
-                'tag_name':element_tag_name,
-                'inner_html':element_inner_html,
-                'props':element_props,
-                'type':element_type
+                'name': element_name,
+                'tag_name': element_tag_name,
+                'inner_html': element_inner_html,
+                'props': element_props,
+                'type': element_type,
             },
-            headers={
-                "Authorization": f"Bearer {config['user_access_token']}",
-                "Content-Type": "application/json"
-            }
+            headers=_base_headers(config),
         ) as resp:
             text = await resp.text()
             return text
@@ -134,16 +148,12 @@ async def my_application_delete_webpage( webpage_uuid: str, ) -> str:
     在我的應用中刪除網頁
     """
     config = get_user_config()
-    protocol = "http" if dev else "https"
 
     async with aiohttp.ClientSession() as session:
         async with session.delete(
-            f"{protocol}://{config['domain']}/api/v1/website/webpage/{webpage_uuid}/delete/",
+            _build_url(config, f"/api/v1/website/webpage/{webpage_uuid}/delete/"),
             ssl=ssl_context,
-            headers={
-                "Authorization": f"Bearer {config['user_access_token']}",
-                "Content-Type": "application/json"
-            }
+            headers=_base_headers(config),
         ) as resp:
             text = await resp.text()
             return text
@@ -155,16 +165,12 @@ async def my_application_delete_element( parent_relation_uuid: str, ) -> str:
     在我的應用中移除元素關係
     """
     config = get_user_config()
-    protocol = "http" if dev else "https"
 
     async with aiohttp.ClientSession() as session:
         async with session.delete(
-            f"{protocol}://{config['domain']}/api/v1/website/element/{parent_relation_uuid}/delete/",
+            _build_url(config, f"/api/v1/website/element/{parent_relation_uuid}/delete/"),
             ssl=ssl_context,
-            headers={
-                "Authorization": f"Bearer {config['user_access_token']}",
-                "Content-Type": "application/json"
-            }
+            headers=_base_headers(config),
         ) as resp:
             text = await resp.text()
             return text
@@ -182,24 +188,20 @@ async def my_application_update_webpage(
     在我的應用中更新網頁
     """
     config = get_user_config()
-    protocol = "http" if dev else "https"
 
-    json = {}
+    body = {}
     if webpage_name:
-        json['name'] = webpage_name
+        body['name'] = webpage_name
     if webpage_props:
-        json['props'] = webpage_props
+        body['props'] = webpage_props
     if webpage_data:
-        json['data'] = webpage_data
+        body['data'] = webpage_data
     async with aiohttp.ClientSession() as session:
         async with session.put(
-            f"{protocol}://{config['domain']}/api/v1/website/webpage/{webpage_uuid}/update/",
+            _build_url(config, f"/api/v1/website/webpage/{webpage_uuid}/update/"),
             ssl=ssl_context,
-            json=json,
-            headers={
-                "Authorization": f"Bearer {config['user_access_token']}",
-                "Content-Type": "application/json"
-            }
+            json=body,
+            headers=_base_headers(config),
         ) as resp:
             text = await resp.text()
             return text
@@ -219,28 +221,24 @@ async def my_application_update_element(
     在我的應用中更新元素
     """
     config = get_user_config()
-    protocol = "http" if dev else "https"
 
-    json = {}
+    body = {}
     if element_name:
-        json['name'] = element_name
+        body['name'] = element_name
     if element_tag_name:
-        json['tag_name'] = element_tag_name
+        body['tag_name'] = element_tag_name
     if element_inner_html:
-        json['inner_html'] = element_inner_html
+        body['inner_html'] = element_inner_html
     if element_props:
-        json['props'] = element_props
+        body['props'] = element_props
     if element_type:
-        json['type'] = element_type
+        body['type'] = element_type
     async with aiohttp.ClientSession() as session:
         async with session.put(
-            f"{protocol}://{config['domain']}/api/v1/website/element/{element_uuid}/update/",
+            _build_url(config, f"/api/v1/website/element/{element_uuid}/update/"),
             ssl=ssl_context,
-            json=json,
-            headers={
-                "Authorization": f"Bearer {config['user_access_token']}",
-                "Content-Type": "application/json"
-            }
+            json=body,
+            headers=_base_headers(config),
         ) as resp:
             text = await resp.text()
             return text
@@ -254,16 +252,12 @@ async def my_application_list_my_media_assets(
     檢視網站可用的素材
     """
     config = get_user_config()
-    protocol = "http" if dev else "https"
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            f"{protocol}://{config['domain']}/api/v1/store/{config['store_uuid']}/store_file/list/?is_public=true&media_type={media_type}",
+            _build_url(config, f"/api/v1/store/{config['store_uuid']}/store_file/list/?is_public=true&media_type={media_type}"),
             ssl=ssl_context,
-            headers={
-                "Authorization": f"Bearer {config['user_access_token']}",
-                "Content-Type": "application/json"
-            }
+            headers=_base_headers(config),
         ) as resp:
             text = await resp.text()
             return text
@@ -287,22 +281,18 @@ async def my_application_action_to_target_element(
     如果需要將元素移至相對於目標參考元素 使用 target_parent_relation_uuid 以及 target_relative_position 參數
     """
     config = get_user_config()
-    protocol = "http" if dev else "https"
 
     async with aiohttp.ClientSession() as session:
         async with session.put(
-            f"{protocol}://{config['domain']}/api/v1/website/element/{parent_relation_uuid}/r_action/{action}/",
+            _build_url(config, f"/api/v1/website/element/{parent_relation_uuid}/r_action/{action}/"),
             ssl=ssl_context,
             json={
-                'target_webpage_uuid':target_webpage_uuid,
-                'target_webpage_position':target_webpage_position,
-                'target_element_relation_uuid':target_parent_relation_uuid,
-                'target_relative_position':target_relative_position
+                'target_webpage_uuid': target_webpage_uuid,
+                'target_webpage_position': target_webpage_position,
+                'target_element_relation_uuid': target_parent_relation_uuid,
+                'target_relative_position': target_relative_position,
             },
-            headers={
-                "Authorization": f"Bearer {config['user_access_token']}",
-                "Content-Type": "application/json"
-            }
+            headers=_base_headers(config),
         ) as resp:
             text = await resp.text()
             return text
@@ -314,12 +304,12 @@ async def my_application_get_detail_element_structure(element_uuid: str, ) -> st
     在我的應用中取得目標元素詳細的JSON格式資料
     """
     config = get_user_config()
-    protocol = "http" if dev else "https"
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            f"{protocol}://{config['domain']}/api/v1/website/element/{element_uuid}/agent/retrieve/?detail=true",
-            ssl=ssl_context
+            _build_url(config, f"/api/v1/website/element/{element_uuid}/agent/retrieve/?detail=true"),
+            ssl=ssl_context,
+            headers=_base_headers(config),
         ) as resp:
             text = await resp.text()
             return text
@@ -331,12 +321,12 @@ async def my_application_get_brief_webpage_structure(webpage_name: str, object_u
     在我的應用中取得目標網頁精簡的JSON格式文本架構
     """
     config = get_user_config()
-    protocol = "http" if dev else "https"
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            f"{protocol}://{config['domain']}/api/v1/website/webpage/{webpage_name or ''}/{object_uuid or ''}/agent/retrieve/?detail=false",
-            ssl=ssl_context
+            _build_url(config, f"/api/v1/website/webpage/{webpage_name or ''}/{object_uuid or ''}/agent/retrieve/?detail=false"),
+            ssl=ssl_context,
+            headers=_base_headers(config),
         ) as resp:
             text = await resp.text()
             return text
@@ -352,8 +342,9 @@ async def my_application_get_element_component_source(component: Optional[Litera
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            f"https://{config['domain']}/website_backend/source-viewer/{component}.html",
-            ssl=ssl_context
+            _build_url(config, f"/website_backend/source-viewer/{component}.html"),
+            ssl=ssl_context,
+            headers=_base_headers(config),
         ) as resp:
             text = await resp.text()
             return text

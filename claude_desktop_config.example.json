@@ -5,9 +5,9 @@
       "args": [
         "run",
         "--project",
-        "/Users/linyilin/Desktop/tnt-mcp",
+        "/Users/linyilin/Desktop/kp_mcp_server",
         "python",
-        "/Users/linyilin/Desktop/tnt-mcp/server.py"
+        "/Users/linyilin/Desktop/kp_mcp_server/server.py"
       ],
       "env": {
         "DEV": "true"
