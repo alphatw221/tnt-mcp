@@ -354,4 +354,4 @@ if __name__ == "__main__":
     if dev:
         mcp.run(transport="stdio")
     else:
-        mcp.run(transport="streamable-http", host="0.0.0.0", port=8080)
+        mcp.run(transport="streamable-http", host="0.0.0.0", port=8080, stateless_http=True)
