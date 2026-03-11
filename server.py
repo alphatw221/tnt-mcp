@@ -44,11 +44,13 @@ def get_user_config() -> dict:
     """
     if dev:
         domain = os.environ.get('DOMAIN')
+        protocol = os.environ.get('PROTOCOL', 'https')
         return {
             'user_access_token': os.environ.get('USER_ACCESS_TOKEN'),
             'domain': domain,
             'store_uuid': os.environ.get('STORE_UUID'),
             'internal_base_url': None,  # dev 模式直接用 domain
+            'protocol': protocol,
         }
     token = get_access_token()
     protocol = token.claims.get('protocol', 'https')
@@ -67,7 +69,8 @@ def _build_url(config: dict, path: str) -> str:
     """用內部 service URL 避免 hairpin NAT，dev 模式直接用 domain"""
     if config['internal_base_url']:
         return f"{config['internal_base_url']}{path}"
-    return f"http://{config['domain']}{path}"
+    protocol = config.get('protocol', 'https')
+    return f"{protocol}://{config['domain']}{path}"
 
 
 def _base_headers(config: dict) -> dict:
@@ -333,7 +336,7 @@ async def my_application_get_brief_webpage_structure(webpage_name: str, object_u
 
 @mcp.tool()
 async def my_application_get_element_component_source(component: Optional[Literal['custom_slider', 'ck_editor', 'customer_login_form', 'customer_register_form', 'product_detail', 'cart_detail', 'checkout_form', 'order_detail', 'order_payment', 'my_orders', 
-                      'my_account_button','cart_button', 'shop', 'website_search_bar', 'contact_us_form', 'blog_post_detail', 'ComposeProductModal', 'OrderItemsSummary', 'GuestCheckoutNotification']]) -> str:
+                      'my_account_button','cart_button', 'shop', 'website_search_bar', 'contact_us_form', 'blog_post_detail', 'ComposeProductModal', 'OrderItemsSummary', 'GuestCheckoutNotification', 'ECPay', 'CashOnDelivery']]) -> str:
     """
     取得我的應用中特定element type組件的原始碼以及預設樣式表
     """
