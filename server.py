@@ -317,7 +317,22 @@ async def my_application_get_detail_element_structure(element_uuid: str, ) -> st
             text = await resp.text()
             return text
 
+@mcp.tool()
+async def my_application_get_detail_website_structure() -> str:
+    """
+    在我的應用中取得整個網站的所有頁面細節的JSON格式文本架構
+    """
+    config = get_user_config()
 
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            _build_url(config, f"/api/v1/website/website/retrieve/"),
+            ssl=ssl_context,
+            headers=_base_headers(config),
+        ) as resp:
+            text = await resp.text()
+            return text
+        
 @mcp.tool()
 async def my_application_get_brief_webpage_structure(webpage_name: str, object_uuid: Optional[str]) -> str:
     """
