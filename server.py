@@ -36,6 +36,7 @@ auth = StaticTokenVerifier(tokens=_load_tokens())
 mcp = FastMCP("TNT-MCP", auth=auth)
 
 
+
 def get_user_config() -> dict:
     """
     取得使用者設定。
@@ -56,7 +57,10 @@ def get_user_config() -> dict:
     protocol = token.claims.get('protocol', 'https')
     host = token.claims.get('host')
     port = token.claims.get('port', '')
-    base = f"{protocol}://{host}:{port}" if port else f"{protocol}://{host}"
+    if host:
+        base = f"{protocol}://{host}:{port}" if port else f"{protocol}://{host}"
+    else:
+        base = None
     return {
         'user_access_token': token.claims.get('user_access_token'),
         'domain': token.claims.get('domain'),
@@ -90,7 +94,7 @@ ssl_context.check_hostname = False
 ssl_context.verify_mode = ssl.CERT_NONE
 
 
-@mcp.tool()
+@mcp.tool(output_schema=None)
 async def my_application_create_webpage( webpage_name: str, ) -> str:
     """
     在我的應用中創建網頁
@@ -109,18 +113,18 @@ async def my_application_create_webpage( webpage_name: str, ) -> str:
 
 
 
-@mcp.tool()
+@mcp.tool(output_schema=None)
 async def my_application_create_element(
-    target_webpage_uuid: Optional[str],
-    target_webpage_position: Optional[Literal['head', 'body']],
-    target_parent_relation_uuid: Optional[str],
-    target_relative_position: Optional[Literal['before', 'after', 'in']] ,
     element_name: str,
     element_tag_name: str,
     element_inner_html: str,
     element_props: dict,
+    target_webpage_uuid: Optional[str] = None,
+    target_webpage_position: Optional[Literal['head', 'body']] = None,
+    target_parent_relation_uuid: Optional[str] = None,
+    target_relative_position: Optional[Literal['before', 'after', 'in']] = None,
     element_type: Optional[Literal['custom_slider', 'ck_editor', 'customer_login_form', 'customer_register_form', 'product_detail', 'cart_detail', 'checkout_form', 'order_detail', 'order_payment', 'my_orders',
-                      'my_account_button','cart_button', 'shop', 'website_search_bar', 'contact_us_form', 'blog_post_detail', 'blog_grid']]
+                      'my_account_button','cart_button', 'shop', 'website_search_bar', 'contact_us_form', 'blog_post_detail', 'blog_grid']] = None,
     ) -> str:
     """
     在我的應用中創建元素
@@ -145,7 +149,7 @@ async def my_application_create_element(
             text = await resp.text()
             return text
 
-@mcp.tool()
+@mcp.tool(output_schema=None)
 async def my_application_delete_webpage( webpage_uuid: str, ) -> str:
     """
     在我的應用中刪除網頁
@@ -162,7 +166,7 @@ async def my_application_delete_webpage( webpage_uuid: str, ) -> str:
             return text
 
 
-@mcp.tool()
+@mcp.tool(output_schema=None)
 async def my_application_delete_element( parent_relation_uuid: str, ) -> str:
     """
     在我的應用中移除元素關係
@@ -180,12 +184,12 @@ async def my_application_delete_element( parent_relation_uuid: str, ) -> str:
 
 
 #更新網頁
-@mcp.tool()
+@mcp.tool(output_schema=None)
 async def my_application_update_webpage(
     webpage_uuid: str,
-    webpage_name: Optional[str],
-    webpage_props:Optional[dict],
-    webpage_data: Optional[dict]
+    webpage_name: Optional[str] = None,
+    webpage_props: Optional[dict] = None,
+    webpage_data: Optional[dict] = None,
     ) -> str:
     """
     在我的應用中更新網頁
@@ -210,15 +214,15 @@ async def my_application_update_webpage(
             return text
 
 #更新元素
-@mcp.tool()
+@mcp.tool(output_schema=None)
 async def my_application_update_element(
     element_uuid: str,
-    element_name: Optional[str],
-    element_tag_name: Optional[str],
-    element_inner_html: Optional[str],
-    element_props:Optional[dict],
+    element_name: Optional[str] = None,
+    element_tag_name: Optional[str] = None,
+    element_inner_html: Optional[str] = None,
+    element_props: Optional[dict] = None,
     element_type: Optional[Literal['custom_slider', 'ck_editor', 'customer_login_form', 'customer_register_form', 'product_detail', 'cart_detail', 'checkout_form', 'order_detail', 'order_payment', 'my_orders',
-                      'my_account_button','cart_button', 'shop', 'website_search_bar', 'contact_us_form', 'blog_post_detail', 'blog_grid']]
+                      'my_account_button','cart_button', 'shop', 'website_search_bar', 'contact_us_form', 'blog_post_detail', 'blog_grid']] = None,
     ) -> str:
     """
     在我的應用中更新元素
@@ -247,7 +251,7 @@ async def my_application_update_element(
             return text
 
 #檢視我的素材
-@mcp.tool()
+@mcp.tool(output_schema=None)
 async def my_application_list_my_media_assets(
     media_type: Literal['image', 'video']
     ) -> str:
@@ -267,16 +271,14 @@ async def my_application_list_my_media_assets(
 
 
 #元素動作
-@mcp.tool()
+@mcp.tool(output_schema=None)
 async def my_application_action_to_target_element(
     parent_relation_uuid: str,
     action: Literal['mirror', 'clone', 'move'],
-
-    target_webpage_uuid: Optional[str],
-    target_webpage_position: Optional[Literal['head', 'body']],
-    target_parent_relation_uuid: Optional[str],
-    target_relative_position: Optional[Literal['before', 'after', 'in']]
-
+    target_webpage_uuid: Optional[str] = None,
+    target_webpage_position: Optional[Literal['head', 'body']] = None,
+    target_parent_relation_uuid: Optional[str] = None,
+    target_relative_position: Optional[Literal['before', 'after', 'in']] = None,
     ) -> str:
     """
     在我的應用中 移動/鏡像/克隆 目標元素
@@ -301,7 +303,7 @@ async def my_application_action_to_target_element(
             return text
 
 
-@mcp.tool()
+@mcp.tool(output_schema=None)
 async def my_application_get_detail_element_structure(element_uuid: str, ) -> str:
     """
     在我的應用中取得目標元素詳細的JSON格式資料
@@ -317,24 +319,24 @@ async def my_application_get_detail_element_structure(element_uuid: str, ) -> st
             text = await resp.text()
             return text
 
-@mcp.tool()
-async def my_application_get_detail_website_structure() -> str:
-    """
-    在我的應用中取得整個網站的所有頁面細節的JSON格式文本架構
-    """
-    config = get_user_config()
+# @mcp.tool()
+# async def my_application_get_detail_website_structure() -> str:
+#     """
+#     在我的應用中取得整個網站的所有頁面細節的JSON格式文本架構
+#     """
+#     config = get_user_config()
 
-    async with aiohttp.ClientSession() as session:
-        async with session.get(
-            _build_url(config, f"/api/v1/website/website/retrieve/"),
-            ssl=ssl_context,
-            headers=_base_headers(config),
-        ) as resp:
-            text = await resp.text()
-            return text
+#     async with aiohttp.ClientSession() as session:
+#         async with session.get(
+#             _build_url(config, f"/api/v1/website/website/retrieve/"),
+#             ssl=ssl_context,
+#             headers=_base_headers(config),
+#         ) as resp:
+#             text = await resp.text()
+#             return text
         
-@mcp.tool()
-async def my_application_get_brief_webpage_structure(webpage_name: str, object_uuid: Optional[str]) -> str:
+@mcp.tool(output_schema=None)
+async def my_application_get_brief_webpage_structure(webpage_name: str, object_uuid: Optional[str] = None) -> str:
     """
     在我的應用中取得目標網頁精簡的JSON格式文本架構
     """
