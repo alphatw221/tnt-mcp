@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(kubectl run -n default fix-node1 --image=ubuntu --overrides='{:*)"
+    ]
+  }
+}

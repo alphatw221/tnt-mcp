@@ -3,7 +3,7 @@
 # 设置变量
 IMAGE_NAME="yihsuehlin/tnt-mcp"
 TAG="latest"
-DEPLOYMENT_NAME="tnt-mcp" # 替换为您的 Deployment 名称
+DEPLOYMENT_NAME="tnt-mcp-deployment" # 替换为您的 Deployment 名称
 NAMESPACE="default" # 替换为您的命名空间，如果是 default 就不需要修改
 POD_LABEL="app=tnt-mcp" # 替换为用于选择 pod 的标签
 
