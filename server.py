@@ -120,7 +120,7 @@ async def my_application_create_element(
     element_inner_html: str,
     element_props: dict,
     element_type: Optional[Literal['custom_slider', 'ck_editor', 'customer_login_form', 'customer_register_form', 'product_detail', 'cart_detail', 'checkout_form', 'order_detail', 'order_payment', 'my_orders',
-                      'my_account_button','cart_button', 'shop', 'website_search_bar', 'contact_us_form', 'blog_post_detail']]
+                      'my_account_button','cart_button', 'shop', 'website_search_bar', 'contact_us_form', 'blog_post_detail', 'blog_grid']]
     ) -> str:
     """
     在我的應用中創建元素
@@ -218,7 +218,7 @@ async def my_application_update_element(
     element_inner_html: Optional[str],
     element_props:Optional[dict],
     element_type: Optional[Literal['custom_slider', 'ck_editor', 'customer_login_form', 'customer_register_form', 'product_detail', 'cart_detail', 'checkout_form', 'order_detail', 'order_payment', 'my_orders',
-                      'my_account_button','cart_button', 'shop', 'website_search_bar', 'contact_us_form', 'blog_post_detail']]
+                      'my_account_button','cart_button', 'shop', 'website_search_bar', 'contact_us_form', 'blog_post_detail', 'blog_grid']]
     ) -> str:
     """
     在我的應用中更新元素
@@ -351,7 +351,7 @@ async def my_application_get_brief_webpage_structure(webpage_name: str, object_u
 
 @mcp.tool()
 async def my_application_get_element_component_source(component: Optional[Literal['custom_slider', 'ck_editor', 'customer_login_form', 'customer_register_form', 'product_detail', 'cart_detail', 'checkout_form', 'order_detail', 'order_payment', 'my_orders', 
-                      'my_account_button','cart_button', 'shop', 'website_search_bar', 'contact_us_form', 'blog_post_detail', 'ComposeProductModal', 'OrderItemsSummary', 'GuestCheckoutNotification', 'ECPay', 'CashOnDelivery']]) -> str:
+                      'my_account_button','cart_button', 'shop', 'website_search_bar', 'contact_us_form', 'blog_post_detail', 'blog_grid', 'BlogPostSingle','ComposeProductModal', 'OrderItemsSummary', 'GuestCheckoutNotification', 'ECPay', 'CashOnDelivery']]) -> str:
     """
     取得我的應用中特定element type組件的原始碼以及預設樣式表
     """
