@@ -11,6 +11,35 @@ import aiohttp
 import json
 from typing import Literal, Optional
 
+# 集中管理 element type 選項，create / update / get_source 共用同一份
+ElementType = Optional[Literal[
+    'custom_slider',
+    'ck_editor',
+    'customer_login_form',
+    'customer_register_form',
+    'customer_reset_password_form',
+    'product_detail',
+    'cart_detail',
+    'checkout_form',
+    'order_detail',
+    'order_payment',
+    'my_orders',
+    'my_account_button',
+    'cart_button',
+    'shop',
+    'website_search_bar',
+    'contact_us_form',
+    'blog_post_detail',
+    'blog_grid',
+    'BlogPostSingle',
+    'ComposeProductModal',
+    'OrderItemsSummary',
+    'GuestCheckoutNotification',
+    'ECPay',
+    'CashOnDelivery',
+    'dynamic_route_element',
+]]
+
 from dotenv import load_dotenv
 from fastmcp.server.dependencies import get_access_token
 import os
@@ -69,13 +98,19 @@ def get_user_config() -> dict:
     }
 
 
-def _build_url(config: dict, path: str) -> str:
+def _build_api_url(config: dict, path: str) -> str:
     """用內部 service URL 避免 hairpin NAT，dev 模式直接用 domain"""
     if config['internal_base_url']:
         return f"{config['internal_base_url']}{path}"
     protocol = config.get('protocol', 'https')
     return f"{protocol}://{config['domain']}{path}"
 
+def _build_source_viewer_url(config: dict, path: str) -> str:
+    
+    if config['internal_base_url']:
+        return f"http://tnt-ssr-engine-vite-service.default.svc.cluster.local{path}"
+    protocol = config.get('protocol', 'https')
+    return f"{protocol}://{config['domain']}{path}"
 
 def _base_headers(config: dict) -> dict:
     """基本 headers，cluster 內部請求加 Host header 讓後端能比對 domain"""
@@ -103,7 +138,7 @@ async def my_application_create_webpage( webpage_name: str, ) -> str:
 
     async with aiohttp.ClientSession() as session:
         async with session.post(
-            _build_url(config, "/api/v1/website/webpage/create/"),
+            _build_api_url(config, "/api/v1/website/webpage/create/"),
             ssl=ssl_context,
             json={'name': webpage_name},
             headers=_base_headers(config),
@@ -123,8 +158,7 @@ async def my_application_create_element(
     target_webpage_position: Optional[Literal['head', 'body']] = None,
     target_parent_relation_uuid: Optional[str] = None,
     target_relative_position: Optional[Literal['before', 'after', 'in']] = None,
-    element_type: Optional[Literal['custom_slider', 'ck_editor', 'customer_login_form', 'customer_register_form', 'product_detail', 'cart_detail', 'checkout_form', 'order_detail', 'order_payment', 'my_orders',
-                      'my_account_button','cart_button', 'shop', 'website_search_bar', 'contact_us_form', 'blog_post_detail', 'blog_grid']] = None,
+    element_type: ElementType = None,
     ) -> str:
     """
     在我的應用中創建元素
@@ -135,7 +169,7 @@ async def my_application_create_element(
 
     async with aiohttp.ClientSession() as session:
         async with session.post(
-            _build_url(config, f"/api/v1/website/element/r_create/?target_webpage_uuid={target_webpage_uuid}&target_webpage_position={target_webpage_position}&target_element_relation_uuid={target_parent_relation_uuid}&target_relative_position={target_relative_position}"),
+            _build_api_url(config, f"/api/v1/website/element/r_create/?target_webpage_uuid={target_webpage_uuid}&target_webpage_position={target_webpage_position}&target_element_relation_uuid={target_parent_relation_uuid}&target_relative_position={target_relative_position}"),
             ssl=ssl_context,
             json={
                 'name': element_name,
@@ -158,7 +192,7 @@ async def my_application_delete_webpage( webpage_uuid: str, ) -> str:
 
     async with aiohttp.ClientSession() as session:
         async with session.delete(
-            _build_url(config, f"/api/v1/website/webpage/{webpage_uuid}/delete/"),
+            _build_api_url(config, f"/api/v1/website/webpage/{webpage_uuid}/delete/"),
             ssl=ssl_context,
             headers=_base_headers(config),
         ) as resp:
@@ -175,7 +209,7 @@ async def my_application_delete_element( parent_relation_uuid: str, ) -> str:
 
     async with aiohttp.ClientSession() as session:
         async with session.delete(
-            _build_url(config, f"/api/v1/website/element/{parent_relation_uuid}/delete/"),
+            _build_api_url(config, f"/api/v1/website/element/{parent_relation_uuid}/delete/"),
             ssl=ssl_context,
             headers=_base_headers(config),
         ) as resp:
@@ -205,7 +239,7 @@ async def my_application_update_webpage(
         body['data'] = webpage_data
     async with aiohttp.ClientSession() as session:
         async with session.put(
-            _build_url(config, f"/api/v1/website/webpage/{webpage_uuid}/update/"),
+            _build_api_url(config, f"/api/v1/website/webpage/{webpage_uuid}/update/"),
             ssl=ssl_context,
             json=body,
             headers=_base_headers(config),
@@ -221,8 +255,7 @@ async def my_application_update_element(
     element_tag_name: Optional[str] = None,
     element_inner_html: Optional[str] = None,
     element_props: Optional[dict] = None,
-    element_type: Optional[Literal['custom_slider', 'ck_editor', 'customer_login_form', 'customer_register_form', 'product_detail', 'cart_detail', 'checkout_form', 'order_detail', 'order_payment', 'my_orders',
-                      'my_account_button','cart_button', 'shop', 'website_search_bar', 'contact_us_form', 'blog_post_detail', 'blog_grid']] = None,
+    element_type: ElementType = None,
     ) -> str:
     """
     在我的應用中更新元素
@@ -242,7 +275,7 @@ async def my_application_update_element(
         body['type'] = element_type
     async with aiohttp.ClientSession() as session:
         async with session.put(
-            _build_url(config, f"/api/v1/website/element/{element_uuid}/update/"),
+            _build_api_url(config, f"/api/v1/website/element/{element_uuid}/update/"),
             ssl=ssl_context,
             json=body,
             headers=_base_headers(config),
@@ -262,7 +295,7 @@ async def my_application_list_my_media_assets(
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            _build_url(config, f"/api/v1/store/{config['store_uuid']}/store_file/list/?is_public=true&media_type={media_type}"),
+            _build_api_url(config, f"/api/v1/store/{config['store_uuid']}/store_file/list/?is_public=true&media_type={media_type}"),
             ssl=ssl_context,
             headers=_base_headers(config),
         ) as resp:
@@ -289,7 +322,7 @@ async def my_application_action_to_target_element(
 
     async with aiohttp.ClientSession() as session:
         async with session.put(
-            _build_url(config, f"/api/v1/website/element/{parent_relation_uuid}/r_action/{action}/"),
+            _build_api_url(config, f"/api/v1/website/element/{parent_relation_uuid}/r_action/{action}/"),
             ssl=ssl_context,
             json={
                 'target_webpage_uuid': target_webpage_uuid,
@@ -312,7 +345,7 @@ async def my_application_get_detail_element_structure(element_uuid: str, ) -> st
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            _build_url(config, f"/api/v1/website/element/{element_uuid}/agent/retrieve/?detail=true"),
+            _build_api_url(config, f"/api/v1/website/element/{element_uuid}/agent/retrieve/?detail=true"),
             ssl=ssl_context,
             headers=_base_headers(config),
         ) as resp:
@@ -328,12 +361,27 @@ async def my_application_get_detail_element_structure(element_uuid: str, ) -> st
 
 #     async with aiohttp.ClientSession() as session:
 #         async with session.get(
-#             _build_url(config, f"/api/v1/website/website/retrieve/"),
+#             _build_api_url(config, f"/api/v1/website/website/retrieve/"),
 #             ssl=ssl_context,
 #             headers=_base_headers(config),
 #         ) as resp:
 #             text = await resp.text()
 #             return text
+@mcp.tool(output_schema=None)
+async def my_application_list_all_webpages() -> str:
+    """
+    在我的應用中取得所有網頁
+    """
+    config = get_user_config()
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            _build_api_url(config, f"/api/v1/website/webpage/list/"),
+            ssl=ssl_context,
+            headers=_base_headers(config),
+        ) as resp:
+            text = await resp.text()
+            return text
         
 @mcp.tool(output_schema=None)
 async def my_application_get_brief_webpage_structure(webpage_name: str, object_uuid: Optional[str] = None) -> str:
@@ -344,7 +392,7 @@ async def my_application_get_brief_webpage_structure(webpage_name: str, object_u
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            _build_url(config, f"/api/v1/website/webpage/{webpage_name or ''}/{object_uuid or ''}/agent/retrieve/?detail=false"),
+            _build_api_url(config, f"/api/v1/website/webpage/{webpage_name or ''}/{object_uuid or ''}/agent/retrieve/?detail=false"),
             ssl=ssl_context,
             headers=_base_headers(config),
         ) as resp:
@@ -352,8 +400,7 @@ async def my_application_get_brief_webpage_structure(webpage_name: str, object_u
             return text
 
 @mcp.tool()
-async def my_application_get_element_component_source(component: Optional[Literal['custom_slider', 'ck_editor', 'customer_login_form', 'customer_register_form', 'product_detail', 'cart_detail', 'checkout_form', 'order_detail', 'order_payment', 'my_orders', 
-                      'my_account_button','cart_button', 'shop', 'website_search_bar', 'contact_us_form', 'blog_post_detail', 'blog_grid', 'BlogPostSingle','ComposeProductModal', 'OrderItemsSummary', 'GuestCheckoutNotification', 'ECPay', 'CashOnDelivery']]) -> str:
+async def my_application_get_element_component_source(component: ElementType) -> str:
     """
     取得我的應用中特定element type組件的原始碼以及預設樣式表
     """
@@ -362,7 +409,7 @@ async def my_application_get_element_component_source(component: Optional[Litera
 
     async with aiohttp.ClientSession() as session:
         async with session.get(
-            _build_url(config, f"/website_backend/source-viewer/{component}.html"),
+            _build_source_viewer_url(config, f"/website_backend/source-viewer/{component}.html"),
             ssl=ssl_context,
             headers=_base_headers(config),
         ) as resp:
