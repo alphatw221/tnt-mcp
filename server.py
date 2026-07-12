@@ -10,6 +10,7 @@ from fastmcp.server.auth import StaticTokenVerifier
 import aiohttp
 import json
 from typing import Literal, Optional
+from datetime import datetime
 
 # 集中管理 element type 選項，create / update / get_source 共用同一份
 ElementType = Optional[Literal[
@@ -412,6 +413,83 @@ async def my_application_get_element_component_source(component: ElementType) ->
         async with session.get(
             _build_source_viewer_url(config, f"/website_backend/source-viewer/{component}.html"),
             ssl=ssl_context,
+            headers=_base_headers(config),
+        ) as resp:
+            text = await resp.text()
+            return text
+
+
+#檢視部落格文章
+@mcp.tool(output_schema=None)
+async def my_application_retrieve_blog_post(blog_post_uuid: str) -> str:
+    """
+    在我的應用中取得目標部落格文章的詳細資料
+    """
+    config = get_user_config()
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            _build_api_url(config, f"/api/v1/store/{config['store_uuid']}/blog_post/{blog_post_uuid}/retrieve/"),
+            ssl=ssl_context,
+            headers=_base_headers(config),
+        ) as resp:
+            text = await resp.text()
+            return text
+
+
+#更新部落格文章
+@mcp.tool(output_schema=None)
+async def my_application_update_blog_post(
+    blog_post_uuid: str,
+    # image: Optional[str] = None,
+    title: Optional[str] = None,
+    subtitle: Optional[str] = None,
+    namespace: Optional[str] = None,
+    priority: Optional[int] = None,
+    tags: Optional[list] = None,
+    visibility: Optional[Literal['visable', 'invisable', 'schedule']] = None,
+    visible_start_time: Optional[datetime] = None,
+    visible_end_time: Optional[datetime] = None,
+    description: Optional[str] = None,
+    keywords: Optional[str] = None,
+    content: Optional[str] = None,
+    # blog_post_category_relations: Optional[list] = None,
+    # blog_post_author_relations: Optional[list] = None,
+    ) -> str:
+    """
+    在我的應用中更新目標部落格文章
+    """
+    config = get_user_config()
+
+    body = {}
+    if title is not None:
+        body['title'] = title
+    if subtitle is not None:
+        body['subtitle'] = subtitle
+    if namespace is not None:
+        body['namespace'] = namespace
+    if priority is not None:
+        body['priority'] = priority
+    if tags is not None:
+        body['tags'] = tags
+    if visibility is not None:
+        body['visibility'] = visibility
+    if visible_start_time is not None:
+        body['visible_start_time'] = visible_start_time.isoformat()
+    if visible_end_time is not None:
+        body['visible_end_time'] = visible_end_time.isoformat()
+    if description is not None:
+        body['description'] = description
+    if keywords is not None:
+        body['keywords'] = keywords
+    if content is not None:
+        body['content'] = content
+
+    async with aiohttp.ClientSession() as session:
+        async with session.put(
+            _build_api_url(config, f"/api/v1/store/{config['store_uuid']}/blog_post/{blog_post_uuid}/update/"),
+            ssl=ssl_context,
+            json=body,
             headers=_base_headers(config),
         ) as resp:
             text = await resp.text()
