@@ -9,8 +9,9 @@ from fastmcp import FastMCP
 from fastmcp.server.auth import StaticTokenVerifier
 import aiohttp
 import json
-from typing import Literal, Optional
+from typing import Annotated, Literal, Optional
 from datetime import datetime
+from pydantic import Field
 
 # 集中管理 element type 選項，create / update / get_source 共用同一份
 ElementType = Optional[Literal[
@@ -452,7 +453,10 @@ async def my_application_update_blog_post(
     visible_end_time: Optional[datetime] = None,
     description: Optional[str] = None,
     keywords: Optional[str] = None,
-    content: Optional[str] = None,
+    content: Annotated[
+        Optional[str],
+        Field(description="部落格文章內文，使用 CKEditor 編輯與檢視，需為 CKEditor 相容的 HTML 格式字串（例如 <p>, <h2>, <ul> 等標籤）"),
+    ] = None,
     # blog_post_category_relations: Optional[list] = None,
     # blog_post_author_relations: Optional[list] = None,
     ) -> str:
@@ -488,6 +492,152 @@ async def my_application_update_blog_post(
     async with aiohttp.ClientSession() as session:
         async with session.put(
             _build_api_url(config, f"/api/v1/store/{config['store_uuid']}/blog_post/{blog_post_uuid}/update/"),
+            ssl=ssl_context,
+            json=body,
+            headers=_base_headers(config),
+        ) as resp:
+            text = await resp.text()
+            return text
+
+
+#檢視商品
+@mcp.tool(output_schema=None)
+async def my_application_retrieve_product(product_uuid: str) -> str:
+    """
+    在我的應用中取得目標商品的詳細資料
+    """
+    config = get_user_config()
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(
+            _build_api_url(config, f"/api/v1/store/{config['store_uuid']}/product/{product_uuid}/retrieve/"),
+            ssl=ssl_context,
+            headers=_base_headers(config),
+        ) as resp:
+            text = await resp.text()
+            return text
+
+
+#更新商品
+@mcp.tool(output_schema=None)
+async def my_application_update_product(
+    product_uuid: str,
+    name: Optional[str] = None,
+    sku: Optional[str] = None,
+    stock: Optional[int] = None,
+    category: Optional[str] = None,
+    tags: Optional[list] = None,
+    # product_type: Optional[str] = None,
+    currency: Optional[str] = None,
+    currency_sign: Optional[str] = None,
+    price: Optional[float] = None,
+    discount_price: Optional[float] = None,
+    discount_start_time: Optional[datetime] = None,
+    discount_end_time: Optional[datetime] = None,
+    visibility: Optional[Literal['visable', 'invisable', 'schedule']] = None,
+    visible_start_time: Optional[datetime] = None,
+    visible_end_time: Optional[datetime] = None,
+    taxable: Optional[bool] = None,
+    tax_rate: Optional[float] = None,
+    inventory_control: Optional[bool] = None,
+    single_page_product: Optional[bool] = None,
+    enable_review: Optional[bool] = None,
+    require_customer_login: Optional[bool] = None,
+    bundle: Optional[int] = None,
+    unit: Optional[str] = None,
+    length: Optional[float] = None,
+    width: Optional[float] = None,
+    height: Optional[float] = None,
+    weight: Optional[float] = None,
+    weight_unit: Optional[str] = None,
+    priority: Optional[int] = None,
+    description: Optional[str] = None,
+    keywords: Optional[str] = None,
+    content: Annotated[
+        Optional[str],
+        Field(description="商品內文，使用 CKEditor 編輯與檢視，需為 CKEditor 相容的 HTML 格式字串（例如 <p>, <h2>, <ul> 等標籤）"),
+    ] = None,
+    spec: Annotated[
+        Optional[str],
+        Field(description="商品規格，使用 CKEditor 編輯與檢視，需為 CKEditor 相容的 HTML 格式字串（例如 <p>, <h2>, <ul> 等標籤）"),
+    ] = None,
+    ) -> str:
+    """
+    在我的應用中更新目標商品
+    """
+    config = get_user_config()
+
+    body = {}
+    if name is not None:
+        body['name'] = name
+    if sku is not None:
+        body['sku'] = sku
+    if stock is not None:
+        body['stock'] = stock
+    if category is not None:
+        body['category'] = category
+    if tags is not None:
+        body['tags'] = tags
+    # if product_type is not None:
+    #     body['type'] = product_type
+    if currency is not None:
+        body['currency'] = currency
+    if currency_sign is not None:
+        body['currency_sign'] = currency_sign
+    if price is not None:
+        body['price'] = price
+    if discount_price is not None:
+        body['discount_price'] = discount_price
+    if discount_start_time is not None:
+        body['discount_start_time'] = discount_start_time.isoformat()
+    if discount_end_time is not None:
+        body['discount_end_time'] = discount_end_time.isoformat()
+    if visibility is not None:
+        body['visibility'] = visibility
+    if visible_start_time is not None:
+        body['visible_start_time'] = visible_start_time.isoformat()
+    if visible_end_time is not None:
+        body['visible_end_time'] = visible_end_time.isoformat()
+    if taxable is not None:
+        body['taxable'] = taxable
+    if tax_rate is not None:
+        body['tax_rate'] = tax_rate
+    if inventory_control is not None:
+        body['inventory_control'] = inventory_control
+    if single_page_product is not None:
+        body['single_page_product'] = single_page_product
+    if enable_review is not None:
+        body['enable_review'] = enable_review
+    if require_customer_login is not None:
+        body['require_customer_login'] = require_customer_login
+    if bundle is not None:
+        body['bundle'] = bundle
+    if unit is not None:
+        body['unit'] = unit
+    if length is not None:
+        body['length'] = length
+    if width is not None:
+        body['width'] = width
+    if height is not None:
+        body['height'] = height
+    if weight is not None:
+        body['weight'] = weight
+    if weight_unit is not None:
+        body['weight_unit'] = weight_unit
+    if priority is not None:
+        body['priority'] = priority
+    if description is not None:
+        body['description'] = description
+    if keywords is not None:
+        body['keywords'] = keywords
+    if content is not None:
+        body['content'] = content
+    if spec is not None:
+        body['spec'] = spec
+
+    async with aiohttp.ClientSession() as session:
+        async with session.put(
+            _build_api_url(config, f"/api/v1/store/{config['store_uuid']}/product/{product_uuid}/update/"),
             ssl=ssl_context,
             json=body,
             headers=_base_headers(config),
