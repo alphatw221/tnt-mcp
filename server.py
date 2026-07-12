@@ -27,6 +27,7 @@ ElementType = Optional[Literal[
     'my_account_button',
     'cart_button',
     'shop',
+    'SingleProduct',
     'website_search_bar',
     'contact_us_form',
     'blog_post_detail',
