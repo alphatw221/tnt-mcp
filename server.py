@@ -133,7 +133,7 @@ def _base_headers(config: dict, content_type: Optional[str] = "application/json"
 
 def _to_form_data(body: dict) -> aiohttp.FormData:
     """把 body dict 轉成 multipart/form-data，給只吃 multipart 的後端 endpoint 用"""
-    form = aiohttp.FormData()
+    form = aiohttp.FormData(default_to_multipart=True)
     for key, value in body.items():
         if isinstance(value, bool):
             form.add_field(key, str(value).lower())
