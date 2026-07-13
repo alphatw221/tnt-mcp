@@ -115,15 +115,33 @@ def _build_source_viewer_url(config: dict, path: str) -> str:
     protocol = config.get('protocol', 'https')
     return f"{protocol}://{config['domain']}{path}"
 
-def _base_headers(config: dict) -> dict:
-    """基本 headers，cluster 內部請求加 Host header 讓後端能比對 domain"""
+def _base_headers(config: dict, content_type: Optional[str] = "application/json") -> dict:
+    """基本 headers，cluster 內部請求加 Host header 讓後端能比對 domain
+
+    content_type=None 時不帶 Content-Type，讓 aiohttp 依 data 內容自動設定
+    （例如 multipart/form-data 需要自動產生 boundary）
+    """
     headers = {
         "Authorization": f"Bearer {config['user_access_token']}",
-        "Content-Type": "application/json",
     }
+    if content_type:
+        headers["Content-Type"] = content_type
     if config['internal_base_url']:
         headers["Host"] = config['domain']
     return headers
+
+
+def _to_form_data(body: dict) -> aiohttp.FormData:
+    """把 body dict 轉成 multipart/form-data，給只吃 multipart 的後端 endpoint 用"""
+    form = aiohttp.FormData()
+    for key, value in body.items():
+        if isinstance(value, bool):
+            form.add_field(key, str(value).lower())
+        elif isinstance(value, (list, dict)):
+            form.add_field(key, json.dumps(value))
+        else:
+            form.add_field(key, str(value))
+    return form
 
 
 # 创建一个不验证 SSL 证书的上下文
@@ -493,8 +511,8 @@ async def my_application_update_blog_post(
         async with session.put(
             _build_api_url(config, f"/api/v1/store/{config['store_uuid']}/blog_post/{blog_post_uuid}/update/"),
             ssl=ssl_context,
-            json=body,
-            headers=_base_headers(config),
+            data=_to_form_data(body),
+            headers=_base_headers(config, content_type=None),
         ) as resp:
             text = await resp.text()
             return text
@@ -639,8 +657,8 @@ async def my_application_update_product(
         async with session.put(
             _build_api_url(config, f"/api/v1/store/{config['store_uuid']}/product/{product_uuid}/update/"),
             ssl=ssl_context,
-            json=body,
-            headers=_base_headers(config),
+            data=_to_form_data(body),
+            headers=_base_headers(config, content_type=None),
         ) as resp:
             text = await resp.text()
             return text
