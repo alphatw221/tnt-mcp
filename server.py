@@ -41,6 +41,20 @@ ElementType = Optional[Literal[
     'ECPay',
     'CashOnDelivery',
     'dynamic_route_element',
+
+    'CartToast',
+    'OrderReviews',
+    'OrderReviewItem',
+    'StarInput',
+    'ProductReviews',
+    'ProductReviewSummary',
+    'ProductRating2',
+    'BlogPostComments',
+
+
+
+
+
 ]]
 
 from dotenv import load_dotenv
