@@ -51,6 +51,7 @@ ElementType = Optional[Literal[
     'ProductRating2',
     'BlogPostComments',
 
+    'ShareButton',
 
 
 
